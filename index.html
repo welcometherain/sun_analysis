@@ -1,0 +1,66 @@
+// 📦 Dependencies (assumes use of a basic HTML/JS app)
+// - suncalc.js (for sun position)
+// - jsPDF (for PDF generation)
+
+// 1. Load suncalc and jsPDF via CDN in your HTML:
+/*
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+*/
+
+// 2. JavaScript Code Example:
+
+async function generateSunAnalysisReport(lat, lon, locationName, timeZone) {
+  const dates = [
+    { name: "March Equinox", date: new Date("2025-03-20T12:00:00Z") },
+    { name: "June Solstice", date: new Date("2025-06-21T12:00:00Z") },
+    { name: "September Equinox", date: new Date("2025-09-22T12:00:00Z") },
+    { name: "December Solstice", date: new Date("2025-12-21T12:00:00Z") },
+  ];
+
+  const results = dates.map(({ name, date }) => {
+    const times = SunCalc.getTimes(date, lat, lon);
+    const pos = SunCalc.getPosition(times.solarNoon, lat, lon);
+
+    return {
+      name,
+      dawn: times.dawn.toLocaleTimeString("en-US", { timeZone }),
+      sunrise: times.sunrise.toLocaleTimeString("en-US", { timeZone }),
+      sunset: times.sunset.toLocaleTimeString("en-US", { timeZone }),
+      dusk: times.dusk.toLocaleTimeString("en-US", { timeZone }),
+      altitude: (pos.altitude * (180 / Math.PI)).toFixed(2),
+      azimuth: (pos.azimuth * (180 / Math.PI) + 180).toFixed(2),
+    };
+  });
+
+  // 3. Generate PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(14);
+  doc.text(`Sun Analysis Report`, 10, 10);
+  doc.setFontSize(10);
+  doc.text(`Location: ${locationName}`, 10, 16);
+  doc.text(`Coordinates: ${lat}, ${lon}`, 10, 21);
+  doc.text(`Time Zone: ${timeZone}`, 10, 26);
+
+  let y = 36;
+  results.forEach(r => {
+    doc.text(`${r.name}`, 10, y);
+    y += 6;
+    doc.text(`Sunrise: ${r.sunrise}`, 12, y);
+    doc.text(`Sunset: ${r.sunset}`, 80, y);
+    y += 6;
+    doc.text(`Dawn: ${r.dawn}`, 12, y);
+    doc.text(`Dusk: ${r.dusk}`, 80, y);
+    y += 6;
+    doc.text(`Altitude: ${r.altitude}°`, 12, y);
+    doc.text(`Azimuth: ${r.azimuth}°`, 80, y);
+    y += 10;
+  });
+
+  doc.save("sun-analysis-report.pdf");
+}
+
+// Example use:
+// generateSunAnalysisReport(33.2754, -117.0755, "Valley Center, CA", "America/Los_Angeles");
