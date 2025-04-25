@@ -41,6 +41,14 @@
       drawSunChart(lat, lon);
     }
 
+    window.runSunAnalysis = runSunAnalysis;
+
+    // ... rest of the script stays the same ...
+  </script>
+</body>
+</html>
+
+
     async function generateSunAnalysisReport(lat, lon, locationName, timeZone, jsPDF) {
       const dates = [
         { name: "March Equinox", date: new Date("2025-03-20T12:00:00Z") },
