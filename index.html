@@ -43,12 +43,6 @@
 
     window.runSunAnalysis = runSunAnalysis;
 
-    // ... rest of the script stays the same ...
-  </script>
-</body>
-</html>
-
-
     async function generateSunAnalysisReport(lat, lon, locationName, timeZone, jsPDF) {
       const dates = [
         { name: "March Equinox", date: new Date("2025-03-20T12:00:00Z") },
@@ -73,7 +67,6 @@
       });
 
       const doc = new jsPDF();
-
       doc.setFontSize(14);
       doc.text(`Sun Analysis Report`, 10, 10);
       doc.setFontSize(10);
@@ -83,9 +76,86 @@
 
       let y = 36;
       results.forEach(r => {
-        doc.text(`${r.name}`, 10, y);
-        y += 6;
+        doc.text(`${r.name}`, 10, y); y += 6;
         doc.text(`Sunrise: ${r.sunrise}`, 12, y);
-        doc.text(`Sunset: ${r.sunset}`, 80, y);
-        y += 6;
-        doc.text(`Dawn: ${r.d
+        doc.text(`Sunset: ${r.sunset}`, 80, y); y += 6;
+        doc.text(`Dawn: ${r.dawn}`, 12, y);
+        doc.text(`Dusk: ${r.dusk}`, 80, y); y += 6;
+        doc.text(`Altitude: ${r.altitude}°`, 12, y);
+        doc.text(`Azimuth: ${r.azimuth}°`, 80, y); y += 10;
+      });
+
+      doc.save("sun-analysis-report.pdf");
+    }
+
+    function drawSunChart(lat, lon) {
+      const canvas = document.getElementById('sunCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 200;
+
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      for (let r = 40; r <= radius; r += 40) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+
+      for (let a = 0; a < 360; a += 45) {
+        const rad = a * Math.PI / 180;
+        const x = centerX + radius * Math.cos(rad);
+        const y = centerY + radius * Math.sin(rad);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.fillText(`${a}°`, x - 10, y);
+      }
+
+      const days = [
+        { name: 'June Solstice', color: '#5bc0de', date: new Date('2025-06-21T12:00:00Z') },
+        { name: 'Equinox', color: '#f0ad4e', date: new Date('2025-03-20T12:00:00Z') },
+        { name: 'December Solstice', color: '#5cb85c', date: new Date('2025-12-21T12:00:00Z') }
+      ];
+
+      days.forEach(({ name, color, date }) => {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        for (let hour = 0; hour <= 23; hour++) {
+          const d = new Date(date);
+          d.setUTCHours(hour);
+          const pos = SunCalc.getPosition(d, lat, lon);
+          if (pos.altitude > 0) {
+            const altDeg = pos.altitude * 180 / Math.PI;
+            const azDeg = pos.azimuth * 180 / Math.PI + 180;
+            const r = (altDeg / 90) * radius;
+            const rad = azDeg * Math.PI / 180;
+            const x = centerX + r * Math.cos(rad);
+            const y = centerY + r * Math.sin(rad);
+            if (hour === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      });
+
+      // Legend
+      let legendY = canvas.height - 60;
+      days.forEach(({ name, color }, i) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(20, legendY + i * 20, 10, 10);
+        ctx.fillStyle = '#000';
+        ctx.fillText(name, 35, legendY + 10 + i * 20);
+      });
+
+      ctx.font = '16px sans-serif';
+      ctx.fillStyle = '#600';
+      ctx.fillText('Solar Path Diagram', centerX - 70, 30);
+    }
+  </script>
+</body>
+</html>
